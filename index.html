@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<style>
+		body {margin:0;}
+		
+		ol{
+					
+		}
+		
+		li {
+			
+		}
+		
+		.buttonAdd{
+			background-color: #4CAF50; /* Green */
+			border: none;
+			color: white;
+			padding: 5px;
+			text-align: center;
+			text-decoration: none;
+			display: inline-block;
+			font-size: 10px;
+			margin: 4px 2px;
+			cursor: pointer;
+			border-radius: 4px;
+		}
+		
+		.buttonDiscard{
+			background-color: #f44336; /* Red */
+			border: none;
+			color: white;
+			padding: 5px;
+			text-align: center;
+			text-decoration: none;
+			display: inline-block;
+			font-size: 10px;
+			margin: 4px 2px;
+			cursor: pointer;
+			border-radius: 4px;
+		}		
+		
+		.buttonGo{
+			background-color: #008CBA; /* Red */
+			border: none;
+			color: white;
+			padding: 5px;
+			text-align: center;
+			text-decoration: none;
+			display: inline-block;
+			font-size: 10px;
+			margin: 4px 2px;
+			cursor: pointer;
+			border-radius: 4px;
+		}			
+		
+		.source{
+			display: block;
+		}
+		
+
+
+		/*---------------------------MENU---------------------------*/
+		.navbar {
+		  overflow: hidden;
+		  background-color: #333;
+		  position: fixed;
+		  top: 0;
+		  width: 100%;
+		}
+
+		.navbar a {
+		  float: left;
+		  display: block;
+		  color: #f2f2f2;
+		  text-align: center;
+		  padding: 14px 16px;
+		  text-decoration: none;
+		  font-size: 17px;
+		}
+
+		.navbar a:hover {
+		  background: #ddd;
+		  color: black;
+		}
+
+		.main {
+		  padding: 16px;
+		  margin-top: 30px;
+		  height: 1500px; /* Used in this example to enable scrolling */
+		}
+		
+		/*---------------------------MODAL---------------------------*/
+		.modal {
+		  display: none; /* Hidden by default */
+		  position: fixed; /* Stay in place */
+		  z-index: 1; /* Sit on top */
+		  padding-top: 100px; /* Location of the box */
+		  left: 0;
+		  top: 0;
+		  width: 100%; /* Full width */
+		  height: 100%; /* Full height */
+		  overflow: auto; /* Enable scroll if needed */
+		  background-color: rgb(0,0,0); /* Fallback color */
+		  background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+		}
+
+		/* Modal Content */
+		.modal-content {
+		  background-color: #fefefe;
+		  margin: auto;
+		  padding: 20px;
+		  border: 1px solid #888;
+		  width: 80%;
+		}
+
+		/* The Close Button 
+		.close {
+		  color: #aaaaaa;
+		  float: right;
+		  font-size: 28px;
+		  font-weight: bold;
+		}
+
+		.close:hover,
+		.close:focus {
+		  color: #000;
+		  text-decoration: none;
+		  cursor: pointer;
+		}
+		*/
+		
+		textarea {
+			width: 100%;
+			-webkit-box-sizing: border-box; /* Safari/Chrome, other WebKit */
+			-moz-box-sizing: border-box;    /* Firefox, other Gecko */
+			box-sizing: border-box;         /* Opera/IE 8+ */
+			resize: none;
+		}
+		</style>
+	</head>
+
+	<body>		
+		<div id="modalCsvSentences" class="modal">
+			<div class="modal-content">
+				<div class="csvSentences">
+					<textarea id='textAreaCsv' rows='20'>sample source text;sample translated text</textarea>
+					<button id="go" class="buttonGo">Go</button>
+				</div>
+			</div>
+		</div>		
+		
+		<ol id="template" style="display: none">		
+			<li class="liSentence"><span class="source">{SOURCE}</span><span class="translation">{TRANSLATION}</span><button class="buttonAdd">Add</button><button class="buttonDiscard">Discard</button></li>		
+		</ol>
+
+		<div class="main">
+			<ol id="sentences">				
+			</ol>
+		</div>
+			
+		<div id="modalRevision" class="modal">
+			<div class="modal-content">
+				
+				<div id='modalSource'>
+				</div>
+				<hr />
+				<div id='modalTranslation'>
+				</div>
+				<hr />
+				<div>
+					<button id="buttonHard" class="buttonHard">Hard</button>
+					<button id="buttonMedium" class="buttonMedium">Medium</button>
+					<button id="buttonEasy" class="buttonEasy">Easy</button>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			//------------------------------------------------------------
+			//SETUP
+			//------------------------------------------------------------			
+			var cardsEasy = [];
+			var cardsMedium = [];
+			var cardsHard = [];
+			var modalSource = document.getElementById('modalSource');
+			var modalTranslation = document.getElementById('modalTranslation');
+			var buttonEasy = document.getElementById('buttonEasy');
+			var buttonMedium = document.getElementById('buttonMedium');
+			var buttonHard = document.getElementById('buttonHard');
+			var go = document.getElementById('go');
+			var sentences = document.getElementById('sentences');
+			var textAreaCsv = document.getElementById('textAreaCsv');
+			//------------------------------------------------------------
+			//MODAL
+			//------------------------------------------------------------
+			// Get the modal
+			var modalRevision = document.getElementById("modalRevision");
+			var modalCsvSentences = document.getElementById("modalCsvSentences");			
+
+
+			function showModalCsvSentences(){
+				modalCsvSentences.style.display = "block";							
+			}
+ 
+			function showModalRevision(){
+				convertCsvToSentences();
+				modalRevision.style.display = "block";
+				
+				card = cardsEasy.shift();				
+				modalSource.innerHTML = card.source;
+				modalTranslation.innerHTML = card.translation;								
+			}
+			
+			function convertCsvToSentences() {
+				var allRows = textAreaCsv.value.split(/\r?\n|\r/)
+
+				for (var singleRow = 0; singleRow < allRows.length; singleRow++) {
+					var rowCells = allRows[singleRow].split(';');
+					for (var rowCell = 0; rowCell < rowCells.length; rowCell++) {
+						console.log(rowCells[rowCell]);
+						cardsEasy.push({
+							source: rowCells[rowCell],
+							translation: rowCells[++rowCell]
+						});
+						
+					}
+				} 
+			}
+			
+			go.onclick = function() {		
+				showModalRevision();					
+			}
+			
+			buttonEasy.onclick = function() {
+				card = nextCard();
+				if(card){
+					modalSource.innerHTML = card.source;
+					modalTranslation.innerHTML = card.translation;
+				}
+			}
+
+			buttonMedium.onclick = function() {
+				card = nextCard();
+					
+				if(card){
+					modalSource.innerHTML = card.source;
+					modalTranslation.innerHTML = card.translation;	
+					
+					cardsEasy.push({
+						source: card.source,
+						translation: card.translation
+					});
+				}
+			}
+			
+			buttonHard.onclick = function() {
+				card = nextCard();
+					
+				if(card){
+					modalSource.innerHTML = card.source;
+					modalTranslation.innerHTML = card.translation;	
+					
+					cardsMedium.push({
+						source: card.source,
+						translation: card.translation
+					});
+				}
+			}			
+			
+			function nextCard(){											
+				var card = null;
+				if(cardsEasy.length + cardsMedium.length + cardsHard.length > 0){
+					while(card == null){
+						switch(Math.trunc(getRandomArbitrary(0, 3))){
+							case 2:
+								card = cardsHard.shift();
+								break;						
+							case 1:
+								card = cardsMedium.shift();	
+								break;
+							default:
+								card = cardsEasy.shift();
+								break;
+						}
+					}
+				}else{
+					location.reload();
+				}				
+				return card;
+			}
+			
+			function getRandomArbitrary(min, max) {
+				return Math.random() * (max - min) + min;
+			}
+			
+			showModalCsvSentences();
+		</script>				
+	</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
